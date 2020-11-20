@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana-logging
+  labels:
+    app: kibana-logging
+spec:
+  ports:
+  - port: 5601
+  type: NodePort
+  selector:
+    app: kibana-logging
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana-logging
+  labels:
+    app: kibana-logging
+spec:
+  selector:
+    matchLabels:
+      app: kibana-logging
+  template:
+    metadata:
+      labels:
+        app: kibana-logging
+    spec:
+      containers:
+      - name: kibana-logging
+        image: harbor.zcg.cool/kibana/kibana:7.6.1
+        resources:
+          limits:
+            cpu: 1000m
+          requests:
+            cpu: 1000m
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: http://elasticsearch:9200
+        - name: I18N_LOCALE
+          value: zh-CN
+        ports:
+        - containerPort: 5601
+      imagePullSecrets:
+      - name: harbor-secret
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kibana
+spec:
+ rules:
+ - host: kibana.zcg.cool
+   http: 
+     paths:
+     - path: /
+       pathType: Prefix 
+       backend:
+         service:
+           name: kibana-logging
+           port:
+             number: 5601
